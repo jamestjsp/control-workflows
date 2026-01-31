@@ -20,6 +20,9 @@ uv run python -c "from control_workflows.examples.kalman_filtering import run_ma
 
 # DC motor control example
 uv run python -c "from control_workflows.examples.dc_motor_control import run_matlab_example; run_matlab_example()"
+
+# Continuous-time model creation example
+uv run python -c "from control_workflows.examples.continuous_time_models import run_matlab_example; run_matlab_example()"
 ```
 
 ## SLICOT Usage Patterns
@@ -37,20 +40,29 @@ Key routines:
 - `ab04md` - Bilinear transformation (continuous <-> discrete)
 - `tf01md` - Discrete-time state-space simulation
 - `tb05ad` - Frequency response / DC gain (use freq=0+0j for DC gain)
+- `tb04ad` - State-space to transfer function (rowcol, A, B, C, D)
+- `td04ad` - Transfer function to state-space minimal realization (rowcol, m, p, index, dcoeff, ucoeff, tol)
 
 ## Architecture
 
 ```
 src/control_workflows/
+├── lti/                      # LTI model representations
+│   ├── transfer_function.py  # tf(), TransferFunction, LaplaceDomain
+│   ├── zpk.py                # zpk(), ZPK (zero-pole-gain)
+│   ├── state_space.py        # ss(), StateSpace
+│   └── conversions.py        # tf2ss, ss2tf, zpk2tf, etc (uses tb04ad, td04ad)
 ├── examples/
 │   ├── kalman_filtering/
 │   │   ├── steady_state.py   # sb02od for filter ARE
 │   │   ├── time_varying.py   # fb01vd for recursive updates
 │   │   └── matlab_example.py # Example runner
-│   └── dc_motor_control/
-│       ├── model.py          # DC motor state-space model
-│       ├── lqr.py            # sb02od for LQR gain
-│       └── matlab_example.py # Feedforward vs integral vs LQR comparison
+│   ├── dc_motor_control/
+│   │   ├── model.py          # DC motor state-space model
+│   │   ├── lqr.py            # sb02od for LQR gain
+│   │   └── matlab_example.py # Feedforward vs integral vs LQR comparison
+│   └── continuous_time_models/
+│       └── matlab_example.py # TF, ZPK, SS creation and conversion demo
 ```
 
 ## Skills
