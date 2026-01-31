@@ -8,8 +8,7 @@ Source: https://www.mathworks.com/help/control/ug/control-system-modeling-with-m
 
 import numpy as np
 
-from control_workflows.lti import tf, zpk, pid, tf2ss, zpk2ss
-from .interconnect import series, feedback
+from control_workflows.lti import tf, zpk, pid, tf2ss, zpk2ss, series, feedback
 
 
 def run_matlab_example(verbose: bool = True) -> dict:

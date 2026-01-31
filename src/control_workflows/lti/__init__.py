@@ -4,6 +4,7 @@ from .transfer_function import TransferFunction, tf, pid
 from .zpk import ZPK, zpk
 from .state_space import StateSpace, ss
 from .conversions import tf2ss, ss2tf, zpk2ss, ss2zpk, zpk2tf, tf2zpk
+from .interconnect import series, parallel, feedback
 
 __all__ = [
     "TransferFunction",
@@ -19,4 +20,7 @@ __all__ = [
     "ss2zpk",
     "zpk2tf",
     "tf2zpk",
+    "series",
+    "parallel",
+    "feedback",
 ]

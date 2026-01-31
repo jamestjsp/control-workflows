@@ -83,33 +83,25 @@ class StateSpace:
         return StateSpace(self.A, self.B, -self.C, -self.D)
 
     def __add__(self, other: StateSpace) -> StateSpace:
-        """Parallel connection: y = G1*u + G2*u."""
+        """Parallel connection using SLICOT ab05pd."""
         if not isinstance(other, StateSpace):
             return NotImplemented
-        A = np.block([
-            [self.A, np.zeros((self.n_states, other.n_states))],
-            [np.zeros((other.n_states, self.n_states)), other.A],
-        ])
-        B = np.vstack([self.B, other.B])
-        C = np.hstack([self.C, other.C])
-        D = self.D + other.D
-        return StateSpace(A, B, C, D)
+        from .interconnect import parallel
+
+        return parallel(self, other)
 
     def __mul__(self, other: StateSpace) -> StateSpace:
-        """Series connection: y = G1 * G2 * u (G1 after G2)."""
+        """Series connection using SLICOT ab05md: y = G1 * G2 * u (G1 after G2)."""
         if not isinstance(other, StateSpace):
             return NotImplemented
-        A = np.block([
-            [self.A, self.B @ other.C],
-            [np.zeros((other.n_states, self.n_states)), other.A],
-        ])
-        B = np.vstack([self.B @ other.D, other.B])
-        C = np.hstack([self.C, self.D @ other.C])
-        D = self.D @ other.D
-        return StateSpace(A, B, C, D)
+        from .interconnect import series
+
+        return series(other, self)
 
     def feedback(self, K: StateSpace | NDArray, sign: int = -1) -> StateSpace:
-        """Closed-loop system with feedback gain/system K."""
+        """Closed-loop system with feedback gain/system K using SLICOT ab05nd."""
+        from .interconnect import feedback as fb
+
         if isinstance(K, np.ndarray):
             K = StateSpace(
                 np.zeros((0, 0)),
@@ -117,21 +109,7 @@ class StateSpace:
                 np.zeros((self.n_inputs, 0)),
                 K,
             )
-        I = np.eye(self.n_inputs)
-        D_cl = np.linalg.solve(I - sign * self.D @ K.D, self.D)
-        C_cl = np.hstack([
-            self.C + sign * D_cl @ K.D @ self.C,
-            sign * D_cl @ K.C,
-        ])
-        A_cl = np.block([
-            [self.A + sign * self.B @ K.D @ self.C, sign * self.B @ K.C],
-            [sign * K.B @ self.C, K.A + sign * K.B @ self.D @ K.D @ self.C],
-        ])
-        B_cl = np.vstack([
-            self.B + sign * self.B @ K.D @ D_cl @ K.D,
-            K.B @ D_cl,
-        ])
-        return StateSpace(A_cl, B_cl, C_cl, D_cl)
+        return fb(self, K, sign=float(sign))
 
     def __repr__(self) -> str:
         return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs})"

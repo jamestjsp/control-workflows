@@ -1,9 +1,14 @@
 """Block diagram interconnections using SLICOT."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 from slicot import ab05md, ab05nd, ab05pd
 
-from control_workflows.lti.state_space import StateSpace
+if TYPE_CHECKING:
+    from .state_space import StateSpace
 
 
 def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
@@ -12,6 +17,8 @@ def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
 
     Y = G2(G1(U)) - output of G1 feeds input of G2.
     """
+    from .state_space import StateSpace
+
     a1_f = np.asfortranarray(g1.A)
     b1_f = np.asfortranarray(g1.B)
     c1_f = np.asfortranarray(g1.C)
@@ -37,6 +44,8 @@ def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
 
     Y = G1*U + alpha*G2*U - both systems share same input.
     """
+    from .state_space import StateSpace
+
     n1, m, p, n2 = g1.n_states, g1.n_inputs, g1.n_outputs, g2.n_states
     a1_f = np.asfortranarray(g1.A)
     b1_f = np.asfortranarray(g1.B)
@@ -66,6 +75,8 @@ def feedback(g1: StateSpace, g2: StateSpace, sign: float = -1.0) -> StateSpace:
 
     Note: ab05nd uses opposite sign convention internally.
     """
+    from .state_space import StateSpace
+
     alpha = -sign  # ab05nd convention is opposite
     a1_f = np.asfortranarray(g1.A)
     b1_f = np.asfortranarray(g1.B)
