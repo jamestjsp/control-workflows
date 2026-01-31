@@ -182,3 +182,24 @@ def tf(
     if den is None:
         den = [1.0]
     return TransferFunction(np.asarray(num), np.asarray(den))
+
+
+def pid(kp: float, ki: float = 0.0, kd: float = 0.0, tf_: float = 0.0) -> TransferFunction:
+    """
+    Create PID controller.
+
+    C(s) = Kp + Ki/s + Kd*s/(Tf*s + 1)
+
+    Args:
+        kp: Proportional gain
+        ki: Integral gain
+        kd: Derivative gain
+        tf_: Derivative filter time constant (0 = ideal derivative)
+    """
+    if tf_ == 0:
+        num = [kd, kp, ki]
+        den = [1.0, 0.0]
+    else:
+        num = [kp * tf_ + kd, kp + ki * tf_, ki]
+        den = [tf_, 1.0, 0.0]
+    return TransferFunction(np.asarray(num), np.asarray(den))
