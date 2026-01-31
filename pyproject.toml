@@ -1,0 +1,16 @@
+[project]
+name = "control-workflows"
+version = "0.1.0"
+description = "Agent skills for control system development, design, and analysis workflows"
+readme = "README.md"
+authors = [
+    { name = "James Joseph", email = "jamestjsp@outlook.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "slicot",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.5,<0.10.0"]
+build-backend = "uv_build"
