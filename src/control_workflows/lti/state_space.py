@@ -54,6 +54,20 @@ class StateSpace:
     def is_stable(self) -> bool:
         return bool(np.all(np.real(self.poles()) < 0))
 
+    def freqresp(self, omega: NDArray) -> NDArray[np.complex128]:
+        """Frequency response G(jw) via tb05ad."""
+        omega = np.atleast_1d(np.asarray(omega))
+        A_f = np.asfortranarray(self.A)
+        B_f = np.asfortranarray(self.B)
+        C_f = np.asfortranarray(self.C)
+        result = np.zeros(
+            (self.n_outputs, self.n_inputs, len(omega)), dtype=np.complex128
+        )
+        for i, w in enumerate(omega):
+            g, *_ = tb05ad("N", "G", A_f, B_f, C_f, 1j * w)
+            result[:, :, i] = g + self.D
+        return result
+
     def discretize(self, dt: float, method: str = "tustin") -> StateSpace:
         """Convert to discrete-time using SLICOT ab04md."""
         if method != "tustin":
