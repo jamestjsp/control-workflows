@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Control systems library using **slicot** (C11 rewrite, NOT slycot) for numerical routines. Python 3.13+, managed with uv.
 
-**IMPORTANT**: Import from `slicot`, not `slycot`:
+**CRITICAL**: This project uses `slicot` (C11 rewrite), NOT `slycot` (Fortran wrapper). They have **different APIs**:
 ```python
 from slicot import sb02od  # correct
-# from slycot import sb02od  # WRONG - different package
+# from slycot import sb02od  # WRONG - different package, different signature
 ```
 
 ## Commands
@@ -27,15 +27,18 @@ uv run python -c "from control_workflows.examples.continuous_time_models import 
 
 ## SLICOT Usage Patterns
 
-Read routine docs via `uv run python -c "from slicot import <routine>; help(<routine>)"`.
+**ALWAYS verify routine signature before use** - slicot API differs from slycot:
+```bash
+uv run python -c "from slicot import <routine>; help(<routine>)"
+```
 
 SLICOT routines require Fortran-ordered arrays:
 ```python
 A_f = np.asfortranarray(A)
 ```
 
-Key routines:
-- `sb02od` - Discrete/continuous Riccati solver (uses positional args: dico, jobb, fact, uplo, jobl, sort, n, m, p, A, B, Q, R, L, tol)
+Key routines (signatures verified for slicot, NOT slycot):
+- `sb02od` - Discrete/continuous Riccati solver (dico, jobb, fact, uplo, jobl, sort, n, m, p, A, B, Q, R, L, tol)
 - `fb01vd` - Kalman filter recursion (returns upper triangular P - must symmetrize via `np.triu(P) + np.triu(P, 1).T`)
 - `ab04md` - Bilinear transformation (continuous <-> discrete)
 - `tf01md` - Discrete-time state-space simulation
