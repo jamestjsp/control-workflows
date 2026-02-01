@@ -89,16 +89,61 @@ class StateSpace:
 
         return result
 
-    def discretize(self, dt: float, method: str = "tustin") -> StateSpace:
-        """Convert to discrete-time using SLICOT ab04md."""
+    def discretize(
+        self,
+        dt: float,
+        method: str = "tustin",
+        delay_handling: str = "state",
+        thiran_order: int = 3,
+    ) -> StateSpace:
+        """
+        Convert to discrete-time using SLICOT ab04md.
+
+        Args:
+            dt: Sample time
+            method: Discretization method ("tustin" supported)
+            delay_handling: "state" (z^(-k) augmentation) or "property" (keep as delay fields)
+            thiran_order: Order of Thiran filter for fractional delay (0 = round only)
+        """
         if method != "tustin":
             raise NotImplementedError(f"Method {method} not supported")
+        if delay_handling not in ("state", "property"):
+            raise ValueError(
+                f"delay_handling must be 'state' or 'property', got {delay_handling}"
+            )
+
         A_f = np.asfortranarray(self.A)
         B_f = np.asfortranarray(self.B)
         C_f = np.asfortranarray(self.C)
         D_f = np.asfortranarray(self.D)
         Ad, Bd, Cd, Dd, _ = ab04md("C", A_f, B_f, C_f, D_f, alpha=1.0, beta=dt / 2)
-        return StateSpace(Ad, Bd, Cd, Dd)
+
+        result = StateSpace(Ad, Bd, Cd, Dd)
+
+        if delay_handling == "property":
+            result.input_delay = (
+                self.input_delay.copy() if self.input_delay is not None else None
+            )
+            result.output_delay = (
+                self.output_delay.copy() if self.output_delay is not None else None
+            )
+            return result
+
+        from .delay import discretize_delay
+
+        if self.input_delay is not None and np.any(self.input_delay > 0):
+            for i, d in enumerate(self.input_delay):
+                if d > 0:
+                    delay_ss = discretize_delay(d, dt, thiran_order)
+                    result = _apply_input_delay(result, delay_ss, i)
+
+        if self.output_delay is not None and np.any(self.output_delay > 0):
+            for i, d in enumerate(self.output_delay):
+                if d > 0:
+                    delay_ss = discretize_delay(d, dt, thiran_order)
+                    result = _apply_output_delay(result, delay_ss, i)
+
+        return result
 
     def simulate(
         self, u: NDArray[np.float64], x0: NDArray[np.float64] | None = None
@@ -160,6 +205,64 @@ class StateSpace:
         if self.output_delay is not None and np.any(self.output_delay > 0):
             delay_str += f", output_delay={self.output_delay.tolist()}"
         return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs}{delay_str})"
+
+
+def _apply_input_delay(
+    sys: StateSpace, delay: StateSpace, input_idx: int
+) -> StateSpace:
+    """Apply discrete delay to specific input channel."""
+    nd = delay.n_states
+    ns = sys.n_states
+    ni = sys.n_inputs
+    no = sys.n_outputs
+
+    A_new = np.zeros((ns + nd, ns + nd))
+    A_new[:ns, :ns] = sys.A
+    A_new[:ns, ns:] = sys.B[:, input_idx : input_idx + 1] @ delay.C
+    A_new[ns:, ns:] = delay.A
+
+    B_new = np.zeros((ns + nd, ni))
+    B_new[:ns, :] = sys.B.copy()
+    B_new[:ns, input_idx] = (sys.B[:, input_idx : input_idx + 1] @ delay.D).flatten()
+    B_new[ns:, input_idx] = delay.B.flatten()
+
+    C_new = np.zeros((no, ns + nd))
+    C_new[:, :ns] = sys.C
+    C_new[:, ns:] = sys.D[:, input_idx : input_idx + 1] @ delay.C
+
+    D_new = sys.D.copy()
+    D_new[:, input_idx] = (sys.D[:, input_idx : input_idx + 1] @ delay.D).flatten()
+
+    return StateSpace(A_new, B_new, C_new, D_new)
+
+
+def _apply_output_delay(
+    sys: StateSpace, delay: StateSpace, output_idx: int
+) -> StateSpace:
+    """Apply discrete delay to specific output channel."""
+    nd = delay.n_states
+    ns = sys.n_states
+    ni = sys.n_inputs
+    no = sys.n_outputs
+
+    A_new = np.zeros((ns + nd, ns + nd))
+    A_new[:ns, :ns] = sys.A
+    A_new[ns:, :ns] = delay.B @ sys.C[output_idx : output_idx + 1, :]
+    A_new[ns:, ns:] = delay.A
+
+    B_new = np.zeros((ns + nd, ni))
+    B_new[:ns, :] = sys.B
+    B_new[ns:, :] = delay.B @ sys.D[output_idx : output_idx + 1, :]
+
+    C_new = np.zeros((no, ns + nd))
+    C_new[:, :ns] = sys.C.copy()
+    C_new[output_idx, :ns] = (delay.D @ sys.C[output_idx : output_idx + 1, :]).flatten()
+    C_new[output_idx, ns:] = delay.C.flatten()
+
+    D_new = sys.D.copy()
+    D_new[output_idx, :] = (delay.D @ sys.D[output_idx : output_idx + 1, :]).flatten()
+
+    return StateSpace(A_new, B_new, C_new, D_new)
 
 
 def ss(
