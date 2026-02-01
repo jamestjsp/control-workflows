@@ -17,6 +17,7 @@ from .analysis import (
 from .reduction import balreal, reduce, minreal
 from .response import step_response, impulse_response, initial_response
 from .design import place, acker
+from .frequency import bode, nyquist, margin, freqresp, StabilityMargins
 
 __all__ = [
     "TransferFunction",
@@ -50,4 +51,9 @@ __all__ = [
     "initial_response",
     "place",
     "acker",
+    "bode",
+    "nyquist",
+    "margin",
+    "freqresp",
+    "StabilityMargins",
 ]
