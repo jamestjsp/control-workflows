@@ -86,6 +86,9 @@ def absorbDelay(sys: LTISystem, n: int = 5) -> LTISystem:
         return ZPK(result.z.copy(), result.p.copy(), result.k, delay=0.0)
 
     if isinstance(sys, StateSpace):
+        if sys.dt is not None:
+            return _absorb_delay_discrete(sys)
+
         result = sys
         if sys.input_delay is not None and np.any(sys.input_delay > 0):
             for i, d in enumerate(sys.input_delay):
@@ -323,3 +326,37 @@ def _tf_to_ss_discrete(num: np.ndarray, den: np.ndarray) -> StateSpace:
     D = np.array([[d]])
 
     return StateSpace(A, B, C, D)
+
+
+def _absorb_delay_discrete(sys: StateSpace) -> StateSpace:
+    """Convert discrete-time delays to z^(-k) poles (shift register states)."""
+    from .state_space import StateSpace, _apply_input_delay, _apply_output_delay
+
+    assert sys.dt is not None
+    result = StateSpace(
+        sys.A.copy(), sys.B.copy(), sys.C.copy(), sys.D.copy(), dt=sys.dt
+    )
+
+    if sys.input_delay is not None and np.any(sys.input_delay > 0):
+        for i, d in enumerate(sys.input_delay):
+            if d > 0:
+                k = int(round(d))
+                if k > 0:
+                    delay_ss = discretize_delay(k * sys.dt, sys.dt, thiran_order=0)
+                    result = _apply_input_delay(result, delay_ss, i)
+                    result = StateSpace(
+                        result.A, result.B, result.C, result.D, dt=sys.dt
+                    )
+
+    if sys.output_delay is not None and np.any(sys.output_delay > 0):
+        for i, d in enumerate(sys.output_delay):
+            if d > 0:
+                k = int(round(d))
+                if k > 0:
+                    delay_ss = discretize_delay(k * sys.dt, sys.dt, thiran_order=0)
+                    result = _apply_output_delay(result, delay_ss, i)
+                    result = StateSpace(
+                        result.A, result.B, result.C, result.D, dt=sys.dt
+                    )
+
+    return result

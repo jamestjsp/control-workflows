@@ -11,6 +11,14 @@ if TYPE_CHECKING:
     from .state_space import StateSpace
 
 
+def _check_dt_compatible(g1: StateSpace, g2: StateSpace) -> None:
+    """Raise if systems have incompatible sample times."""
+    if g1.dt != g2.dt:
+        raise ValueError(
+            f"Sample time mismatch: {g1.dt} vs {g2.dt}. Cannot connect continuous with discrete."
+        )
+
+
 def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
     """
     Cascade (series) connection using SLICOT ab05md.
@@ -19,6 +27,8 @@ def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
     Delays accumulate: output delay of G1 + input delay of G2.
     """
     from .state_space import StateSpace
+
+    _check_dt_compatible(g1, g2)
 
     a1_f = np.asfortranarray(g1.A)
     b1_f = np.asfortranarray(g1.B)
@@ -50,7 +60,9 @@ def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
             else:
                 output_delay = output_delay + mid_delay
 
-    return StateSpace(a[:n, :n], b[:n, :], c[:, :n], d, input_delay, output_delay)
+    return StateSpace(
+        a[:n, :n], b[:n, :], c[:, :n], d, input_delay, output_delay, g1.dt
+    )
 
 
 def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
@@ -62,6 +74,7 @@ def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
     """
     from .state_space import StateSpace
 
+    _check_dt_compatible(g1, g2)
     if not _delays_match(g1, g2):
         raise ValueError(
             "Cannot add systems with mismatched delays. Use absorbDelay() first."
@@ -84,7 +97,9 @@ def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
     if info != 0:
         raise RuntimeError(f"ab05pd failed with info={info}")
 
-    return StateSpace(a[:n, :n], b[:n, :], c[:, :n], d, g1.input_delay, g1.output_delay)
+    return StateSpace(
+        a[:n, :n], b[:n, :], c[:, :n], d, g1.input_delay, g1.output_delay, g1.dt
+    )
 
 
 def feedback(g1: StateSpace, g2: StateSpace, sign: float = -1.0) -> StateSpace:
@@ -99,6 +114,7 @@ def feedback(g1: StateSpace, g2: StateSpace, sign: float = -1.0) -> StateSpace:
     """
     from .state_space import StateSpace
 
+    _check_dt_compatible(g1, g2)
     alpha = -sign  # ab05nd convention is opposite
     a1_f = np.asfortranarray(g1.A)
     b1_f = np.asfortranarray(g1.B)
@@ -122,7 +138,9 @@ def feedback(g1: StateSpace, g2: StateSpace, sign: float = -1.0) -> StateSpace:
     input_delay = g1.input_delay
     output_delay = np.array([loop_delay]) if loop_delay > 0 else g1.output_delay
 
-    return StateSpace(a[:n, :n], b[:n, :], c[:, :n], d, input_delay, output_delay)
+    return StateSpace(
+        a[:n, :n], b[:n, :], c[:, :n], d, input_delay, output_delay, g1.dt
+    )
 
 
 def _delays_match(g1: StateSpace, g2: StateSpace) -> bool:

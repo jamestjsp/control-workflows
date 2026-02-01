@@ -11,10 +11,12 @@ from slicot import tb05ad, ab04md, tf01md
 @dataclass
 class StateSpace:
     """
-    Continuous-time state-space model with optional delays.
+    State-space model with optional delays.
 
-    dx/dt = A @ x + B @ u(t - input_delay)
-    y(t - output_delay) = C @ x + D @ u
+    Continuous (dt=None): dx/dt = A @ x + B @ u(t - input_delay)
+    Discrete (dt=Ts):     x[k+1] = A @ x[k] + B @ u[k - input_delay]
+
+    y = C @ x + D @ u (with output_delay if specified)
     """
 
     A: NDArray[np.float64]
@@ -23,6 +25,7 @@ class StateSpace:
     D: NDArray[np.float64]
     input_delay: NDArray[np.float64] | None = None
     output_delay: NDArray[np.float64] | None = None
+    dt: float | None = None
 
     def __post_init__(self) -> None:
         self.A = np.atleast_2d(np.asarray(self.A, dtype=np.float64))
@@ -49,6 +52,10 @@ class StateSpace:
     @property
     def n_outputs(self) -> int:
         return self.C.shape[0]
+
+    @property
+    def is_discrete(self) -> bool:
+        return self.dt is not None
 
     def poles(self) -> NDArray[np.complex128]:
         return np.linalg.eigvals(self.A)
@@ -118,7 +125,7 @@ class StateSpace:
         D_f = np.asfortranarray(self.D)
         Ad, Bd, Cd, Dd, _ = ab04md("C", A_f, B_f, C_f, D_f, alpha=1.0, beta=dt / 2)
 
-        result = StateSpace(Ad, Bd, Cd, Dd)
+        result = StateSpace(Ad, Bd, Cd, Dd, dt=dt)
 
         if delay_handling == "property":
             result.input_delay = (
@@ -167,6 +174,7 @@ class StateSpace:
             -self.D,
             self.input_delay.copy() if self.input_delay is not None else None,
             self.output_delay.copy() if self.output_delay is not None else None,
+            self.dt,
         )
 
     def __add__(self, other: StateSpace) -> StateSpace:
@@ -199,12 +207,14 @@ class StateSpace:
         return fb(self, K, sign=float(sign))
 
     def __repr__(self) -> str:
-        delay_str = ""
+        extra = ""
         if self.input_delay is not None and np.any(self.input_delay > 0):
-            delay_str += f", input_delay={self.input_delay.tolist()}"
+            extra += f", input_delay={self.input_delay.tolist()}"
         if self.output_delay is not None and np.any(self.output_delay > 0):
-            delay_str += f", output_delay={self.output_delay.tolist()}"
-        return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs}{delay_str})"
+            extra += f", output_delay={self.output_delay.tolist()}"
+        if self.dt is not None:
+            extra += f", dt={self.dt}"
+        return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs}{extra})"
 
 
 def _apply_input_delay(
@@ -272,8 +282,9 @@ def ss(
     D: NDArray | Sequence,
     input_delay: NDArray | Sequence | None = None,
     output_delay: NDArray | Sequence | None = None,
+    dt: float | None = None,
 ) -> StateSpace:
-    """Create state-space model from matrices with optional delays."""
+    """Create state-space model from matrices with optional delays and sample time."""
     return StateSpace(
         np.atleast_2d(A),
         np.atleast_2d(B),
@@ -281,4 +292,5 @@ def ss(
         np.atleast_2d(D),
         np.asarray(input_delay) if input_delay is not None else None,
         np.asarray(output_delay) if output_delay is not None else None,
+        dt,
     )

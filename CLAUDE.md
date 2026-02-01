@@ -29,6 +29,9 @@ uv run python -c "from control_workflows.examples.control_system_modeling import
 
 # Time delay support
 uv run python -c "from control_workflows.examples.time_delay import run_matlab_example; run_matlab_example()"
+
+# Discrete delay to z^(-k) poles
+uv run python -c "from control_workflows.examples.delay_to_z import run_matlab_example; run_matlab_example()"
 ```
 
 ## SLICOT Usage Patterns
@@ -78,8 +81,10 @@ src/control_workflows/
 │   │   └── matlab_example.py # TF, ZPK, SS creation and conversion demo
 │   ├── control_system_modeling/
 │   │   └── matlab_example.py # Mixed model types, block diagram algebra
-│   └── time_delay/
-│       └── matlab_example.py # Time delay: Pade, absorbDelay, freq response
+│   ├── time_delay/
+│   │   └── matlab_example.py # Time delay: Pade, absorbDelay, freq response
+│   └── delay_to_z/
+│       └── matlab_example.py # Discrete delay to z^(-k) poles
 ```
 
 ## Skills

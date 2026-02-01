@@ -206,23 +206,38 @@ def tf(
 
 
 def pid(
-    kp: float, ki: float = 0.0, kd: float = 0.0, tf_: float = 0.0
+    kp: float,
+    ki: float = 0.0,
+    kd: float = 0.0,
+    tf_: float = 0.0,
+    Ts: float | None = None,
 ) -> TransferFunction:
     """
     Create PID controller.
 
-    C(s) = Kp + Ki/s + Kd*s/(Tf*s + 1)
+    Continuous: C(s) = Kp + Ki/s + Kd*s/(Tf*s + 1)
+    Discrete (Ts!=None): Tustin discretization of the continuous form
 
     Args:
         kp: Proportional gain
         ki: Integral gain
         kd: Derivative gain
         tf_: Derivative filter time constant (0 = ideal derivative)
+        Ts: Sample time for discrete PID (None = continuous)
     """
-    if tf_ == 0:
-        num = [kd, kp, ki]
-        den = [1.0, 0.0]
-    else:
-        num = [kp * tf_ + kd, kp + ki * tf_, ki]
-        den = [tf_, 1.0, 0.0]
+    if Ts is None:
+        if tf_ == 0:
+            num = [kd, kp, ki]
+            den = [1.0, 0.0]
+        else:
+            num = [kp * tf_ + kd, kp + ki * tf_, ki]
+            den = [tf_, 1.0, 0.0]
+        return TransferFunction(np.asarray(num), np.asarray(den))
+
+    if kd != 0 or tf_ != 0:
+        raise NotImplementedError("Discrete PID with derivative not yet supported")
+    a = kp + ki * Ts / 2
+    b = -kp + ki * Ts / 2
+    num = [a, b]
+    den = [1.0, -1.0]
     return TransferFunction(np.asarray(num), np.asarray(den))
