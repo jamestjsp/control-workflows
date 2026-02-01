@@ -10,14 +10,15 @@ from numpy.typing import NDArray
 @dataclass
 class ZPK:
     """
-    Continuous-time zero-pole-gain model.
+    Continuous-time zero-pole-gain model with optional delay.
 
-    G(s) = k * prod(s - z_i) / prod(s - p_i)
+    G(s) = k * prod(s - z_i) / prod(s - p_i) * e^(-s*delay)
     """
 
     z: NDArray[np.complex128]
     p: NDArray[np.complex128]
     k: float
+    delay: float = 0.0
 
     def __post_init__(self) -> None:
         self.z = np.atleast_1d(np.asarray(self.z, dtype=np.complex128))
@@ -49,20 +50,24 @@ class ZPK:
     def __call__(self, s: complex | NDArray) -> complex | NDArray:
         num = self.k * np.prod(s - self.z)
         den = np.prod(s - self.p)
-        return num / den
+        resp = num / den
+        if self.delay != 0:
+            resp = resp * np.exp(-s * self.delay)
+        return resp
 
     def __neg__(self) -> ZPK:
-        return ZPK(self.z, self.p, -self.k)
+        return ZPK(self.z, self.p, -self.k, self.delay)
 
     def __mul__(self, other: ZPK | float) -> ZPK:
         if isinstance(other, (int, float)):
-            return ZPK(self.z, self.p, self.k * other)
+            return ZPK(self.z, self.p, self.k * other, self.delay)
         if not isinstance(other, ZPK):
             return NotImplemented
         return ZPK(
             np.concatenate([self.z, other.z]),
             np.concatenate([self.p, other.p]),
             self.k * other.k,
+            self.delay + other.delay,
         )
 
     def __rmul__(self, other: float) -> ZPK:
@@ -70,25 +75,28 @@ class ZPK:
 
     def __truediv__(self, other: ZPK | float) -> ZPK:
         if isinstance(other, (int, float)):
-            return ZPK(self.z, self.p, self.k / other)
+            return ZPK(self.z, self.p, self.k / other, self.delay)
         if not isinstance(other, ZPK):
             return NotImplemented
         return ZPK(
             np.concatenate([self.z, other.p]),
             np.concatenate([self.p, other.z]),
             self.k / other.k,
+            self.delay - other.delay,
         )
 
     def __repr__(self) -> str:
-        return f"ZPK(z={self.z.tolist()}, p={self.p.tolist()}, k={self.k})"
+        delay_str = f", delay={self.delay}" if self.delay != 0 else ""
+        return f"ZPK(z={self.z.tolist()}, p={self.p.tolist()}, k={self.k}{delay_str})"
 
 
 def zpk(
     z: NDArray | Sequence | None,
     p: NDArray | Sequence,
     k: float,
+    delay: float = 0.0,
 ) -> ZPK:
-    """Create zero-pole-gain model."""
+    """Create zero-pole-gain model with optional delay."""
     if z is None:
         z = []
-    return ZPK(np.asarray(z), np.asarray(p), k)
+    return ZPK(np.asarray(z), np.asarray(p), k, delay)

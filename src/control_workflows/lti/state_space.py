@@ -11,22 +11,32 @@ from slicot import tb05ad, ab04md, tf01md
 @dataclass
 class StateSpace:
     """
-    Continuous-time state-space model.
+    Continuous-time state-space model with optional delays.
 
-    dx/dt = A @ x + B @ u
-    y = C @ x + D @ u
+    dx/dt = A @ x + B @ u(t - input_delay)
+    y(t - output_delay) = C @ x + D @ u
     """
 
     A: NDArray[np.float64]
     B: NDArray[np.float64]
     C: NDArray[np.float64]
     D: NDArray[np.float64]
+    input_delay: NDArray[np.float64] | None = None
+    output_delay: NDArray[np.float64] | None = None
 
     def __post_init__(self) -> None:
         self.A = np.atleast_2d(np.asarray(self.A, dtype=np.float64))
         self.B = np.atleast_2d(np.asarray(self.B, dtype=np.float64))
         self.C = np.atleast_2d(np.asarray(self.C, dtype=np.float64))
         self.D = np.atleast_2d(np.asarray(self.D, dtype=np.float64))
+        if self.input_delay is not None:
+            self.input_delay = np.atleast_1d(
+                np.asarray(self.input_delay, dtype=np.float64)
+            )
+        if self.output_delay is not None:
+            self.output_delay = np.atleast_1d(
+                np.asarray(self.output_delay, dtype=np.float64)
+            )
 
     @property
     def n_states(self) -> int:
@@ -55,7 +65,7 @@ class StateSpace:
         return bool(np.all(np.real(self.poles()) < 0))
 
     def freqresp(self, omega: NDArray) -> NDArray[np.complex128]:
-        """Frequency response G(jw) via tb05ad."""
+        """Frequency response G(jw) via tb05ad, including delay effects."""
         omega = np.atleast_1d(np.asarray(omega))
         A_f = np.asfortranarray(self.A)
         B_f = np.asfortranarray(self.B)
@@ -66,6 +76,17 @@ class StateSpace:
         for i, w in enumerate(omega):
             g, *_ = tb05ad("N", "G", A_f, B_f, C_f, 1j * w)
             result[:, :, i] = g + self.D
+
+        if self.input_delay is not None:
+            for j, d in enumerate(self.input_delay):
+                if d > 0:
+                    result[:, j, :] *= np.exp(-1j * omega * d)
+
+        if self.output_delay is not None:
+            for i, d in enumerate(self.output_delay):
+                if d > 0:
+                    result[i, :, :] *= np.exp(-1j * omega * d)
+
         return result
 
     def discretize(self, dt: float, method: str = "tustin") -> StateSpace:
@@ -94,7 +115,14 @@ class StateSpace:
         return y.T
 
     def __neg__(self) -> StateSpace:
-        return StateSpace(self.A, self.B, -self.C, -self.D)
+        return StateSpace(
+            self.A,
+            self.B,
+            -self.C,
+            -self.D,
+            self.input_delay.copy() if self.input_delay is not None else None,
+            self.output_delay.copy() if self.output_delay is not None else None,
+        )
 
     def __add__(self, other: StateSpace) -> StateSpace:
         """Parallel connection using SLICOT ab05pd."""
@@ -126,7 +154,12 @@ class StateSpace:
         return fb(self, K, sign=float(sign))
 
     def __repr__(self) -> str:
-        return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs})"
+        delay_str = ""
+        if self.input_delay is not None and np.any(self.input_delay > 0):
+            delay_str += f", input_delay={self.input_delay.tolist()}"
+        if self.output_delay is not None and np.any(self.output_delay > 0):
+            delay_str += f", output_delay={self.output_delay.tolist()}"
+        return f"StateSpace(n={self.n_states}, m={self.n_inputs}, p={self.n_outputs}{delay_str})"
 
 
 def ss(
@@ -134,11 +167,15 @@ def ss(
     B: NDArray | Sequence,
     C: NDArray | Sequence,
     D: NDArray | Sequence,
+    input_delay: NDArray | Sequence | None = None,
+    output_delay: NDArray | Sequence | None = None,
 ) -> StateSpace:
-    """Create state-space model from matrices."""
+    """Create state-space model from matrices with optional delays."""
     return StateSpace(
         np.atleast_2d(A),
         np.atleast_2d(B),
         np.atleast_2d(C),
         np.atleast_2d(D),
+        np.asarray(input_delay) if input_delay is not None else None,
+        np.asarray(output_delay) if output_delay is not None else None,
     )

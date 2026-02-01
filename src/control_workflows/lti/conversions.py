@@ -13,7 +13,7 @@ def ss2tf(sys: StateSpace) -> TransferFunction:
     """
     Convert state-space to transfer function using SLICOT tb04ad.
 
-    Only for SISO systems.
+    Only for SISO systems. Preserves total delay.
     """
     if sys.n_inputs != 1 or sys.n_outputs != 1:
         raise ValueError("ss2tf only supports SISO systems")
@@ -29,22 +29,32 @@ def ss2tf(sys: StateSpace) -> TransferFunction:
     num_poly = num[0, 0, : deg + 1]
     den_poly = den[0, : deg + 1]
 
-    return TransferFunction(num_poly, den_poly)
+    total_delay = 0.0
+    if sys.input_delay is not None:
+        total_delay += float(np.sum(sys.input_delay))
+    if sys.output_delay is not None:
+        total_delay += float(np.sum(sys.output_delay))
+
+    return TransferFunction(num_poly, den_poly, total_delay)
 
 
 def tf2ss(tf: TransferFunction) -> StateSpace:
     """
     Convert transfer function to state-space using SLICOT td04ad.
 
-    Returns controllable canonical form.
+    Returns controllable canonical form. Preserves delay as input_delay.
     """
     n = tf.order
+    input_delay = np.array([tf.input_delay]) if tf.input_delay > 0 else None
+
     if n == 0:
         return StateSpace(
             np.zeros((0, 0)),
             np.zeros((0, 1)),
             np.zeros((1, 0)),
             np.array([[tf.dc_gain()]]),
+            input_delay,
+            None,
         )
 
     num_padded = np.zeros(n + 1)
@@ -63,19 +73,19 @@ def tf2ss(tf: TransferFunction) -> StateSpace:
     B = B[:nr, :]
     C = C[:, :nr]
 
-    return StateSpace(A, B, C, D)
+    return StateSpace(A, B, C, D, input_delay, None)
 
 
 def zpk2tf(z: ZPK) -> TransferFunction:
-    """Convert zero-pole-gain to transfer function."""
+    """Convert zero-pole-gain to transfer function. Preserves delay."""
     num = z.k * np.poly(z.z)
     den = np.poly(z.p)
-    return TransferFunction(np.real(num), np.real(den))
+    return TransferFunction(np.real(num), np.real(den), z.delay)
 
 
 def tf2zpk(tf: TransferFunction) -> ZPK:
-    """Convert transfer function to zero-pole-gain."""
-    return ZPK(tf.zeros(), tf.poles(), tf.num[0])
+    """Convert transfer function to zero-pole-gain. Preserves delay."""
+    return ZPK(tf.zeros(), tf.poles(), tf.num[0], tf.input_delay)
 
 
 def zpk2ss(z: ZPK) -> StateSpace:

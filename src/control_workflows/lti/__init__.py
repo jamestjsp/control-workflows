@@ -18,6 +18,7 @@ from .reduction import balreal, reduce, minreal
 from .response import step_response, impulse_response, initial_response
 from .design import place, acker
 from .frequency import bode, nyquist, margin, freqresp, StabilityMargins
+from .delay import pade, absorbDelay
 
 __all__ = [
     "TransferFunction",
@@ -56,4 +57,6 @@ __all__ = [
     "margin",
     "freqresp",
     "StabilityMargins",
+    "pade",
+    "absorbDelay",
 ]

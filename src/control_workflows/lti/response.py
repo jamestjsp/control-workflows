@@ -8,6 +8,22 @@ from numpy.typing import NDArray
 from .state_space import StateSpace
 
 
+def _has_delays(sys: StateSpace) -> bool:
+    """Check if system has any delays."""
+    if sys.input_delay is not None and np.any(sys.input_delay > 0):
+        return True
+    if sys.output_delay is not None and np.any(sys.output_delay > 0):
+        return True
+    return False
+
+
+def _absorb_delays(sys: StateSpace, pade_order: int = 5) -> StateSpace:
+    """Absorb delays using Pade approximation for time simulation."""
+    from .delay import absorbDelay
+
+    return absorbDelay(sys, pade_order)
+
+
 def _auto_time(sys: StateSpace, t_final: float | None, n_points: int) -> NDArray:
     """Generate time vector based on system poles."""
     if t_final is None:
@@ -26,8 +42,15 @@ def step_response(
     t: NDArray | None = None,
     t_final: float | None = None,
     n_points: int = 1000,
+    pade_order: int = 5,
 ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Step response of continuous-time system. Returns (t, y)."""
+    """Step response of continuous-time system. Returns (t, y).
+
+    Delays are automatically absorbed via Pade approximation.
+    """
+    if _has_delays(sys):
+        sys = _absorb_delays(sys, pade_order)
+
     if t is None:
         t = _auto_time(sys, t_final, n_points)
     else:
@@ -47,8 +70,15 @@ def impulse_response(
     t: NDArray | None = None,
     t_final: float | None = None,
     n_points: int = 1000,
+    pade_order: int = 5,
 ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Impulse response of continuous-time system. Returns (t, y)."""
+    """Impulse response of continuous-time system. Returns (t, y).
+
+    Delays are automatically absorbed via Pade approximation.
+    """
+    if _has_delays(sys):
+        sys = _absorb_delays(sys, pade_order)
+
     if t is None:
         t = _auto_time(sys, t_final, n_points)
     else:
@@ -70,9 +100,22 @@ def initial_response(
     t: NDArray | None = None,
     t_final: float | None = None,
     n_points: int = 1000,
+    pade_order: int = 5,
 ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
-    """Free response from initial condition. Returns (t, y)."""
+    """Free response from initial condition. Returns (t, y).
+
+    Delays are automatically absorbed via Pade approximation.
+    """
+    original_n_states = sys.n_states
+    if _has_delays(sys):
+        sys = _absorb_delays(sys, pade_order)
+
     x0 = np.asarray(x0, dtype=np.float64)
+    if sys.n_states > original_n_states:
+        x0_ext = np.zeros(sys.n_states)
+        x0_ext[:original_n_states] = x0
+        x0 = x0_ext
+
     if t is None:
         t = _auto_time(sys, t_final, n_points)
     else:

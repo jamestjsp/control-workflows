@@ -10,13 +10,14 @@ from numpy.typing import NDArray
 @dataclass
 class TransferFunction:
     """
-    Continuous-time transfer function G(s) = num(s) / den(s).
+    Continuous-time transfer function G(s) = num(s) / den(s) * e^(-s*delay).
 
     Polynomials stored highest-power-first (numpy convention).
     """
 
     num: NDArray[np.float64]
     den: NDArray[np.float64]
+    input_delay: float = 0.0
 
     def __post_init__(self) -> None:
         self.num = np.atleast_1d(np.asarray(self.num, dtype=np.float64))
@@ -49,21 +50,29 @@ class TransferFunction:
         return bool(np.all(np.real(self.poles()) < 0))
 
     def __call__(self, s: complex | NDArray) -> complex | NDArray:
-        return np.polyval(self.num, s) / np.polyval(self.den, s)
+        resp = np.polyval(self.num, s) / np.polyval(self.den, s)
+        if self.input_delay != 0:
+            resp = resp * np.exp(-s * self.input_delay)
+        return resp
 
     def __neg__(self) -> TransferFunction:
-        return TransferFunction(-self.num, self.den)
+        return TransferFunction(-self.num, self.den, self.input_delay)
 
     def __add__(self, other: TransferFunction | float) -> TransferFunction:
         if isinstance(other, (int, float)):
             other = TransferFunction([other], [1.0])
         if not isinstance(other, TransferFunction):
             return NotImplemented
+        if self.input_delay != other.input_delay:
+            raise ValueError(
+                f"Cannot add TFs with different delays ({self.input_delay} vs {other.input_delay}). "
+                "Use absorbDelay() first."
+            )
         num = np.polyadd(
             np.polymul(self.num, other.den), np.polymul(other.num, self.den)
         )
         den = np.polymul(self.den, other.den)
-        return TransferFunction(num, den)
+        return TransferFunction(num, den, self.input_delay)
 
     def __radd__(self, other: float) -> TransferFunction:
         return self.__add__(other)
@@ -76,11 +85,13 @@ class TransferFunction:
 
     def __mul__(self, other: TransferFunction | float) -> TransferFunction:
         if isinstance(other, (int, float)):
-            return TransferFunction(self.num * other, self.den)
+            return TransferFunction(self.num * other, self.den, self.input_delay)
         if not isinstance(other, TransferFunction):
             return NotImplemented
         return TransferFunction(
-            np.polymul(self.num, other.num), np.polymul(self.den, other.den)
+            np.polymul(self.num, other.num),
+            np.polymul(self.den, other.den),
+            self.input_delay + other.input_delay,
         )
 
     def __rmul__(self, other: float) -> TransferFunction:
@@ -88,11 +99,13 @@ class TransferFunction:
 
     def __truediv__(self, other: TransferFunction | float) -> TransferFunction:
         if isinstance(other, (int, float)):
-            return TransferFunction(self.num / other, self.den)
+            return TransferFunction(self.num / other, self.den, self.input_delay)
         if not isinstance(other, TransferFunction):
             return NotImplemented
         return TransferFunction(
-            np.polymul(self.num, other.den), np.polymul(self.den, other.num)
+            np.polymul(self.num, other.den),
+            np.polymul(self.den, other.num),
+            self.input_delay - other.input_delay,
         )
 
     def __rtruediv__(self, other: float) -> TransferFunction:
@@ -100,32 +113,37 @@ class TransferFunction:
 
     def __pow__(self, n: int) -> TransferFunction:
         if n == 0:
-            return TransferFunction([1.0], [1.0])
+            return TransferFunction([1.0], [1.0], 0.0)
         if n < 0:
-            return TransferFunction(self.den, self.num) ** (-n)
+            return TransferFunction(self.den, self.num, -self.input_delay) ** (-n)
         result = self
         for _ in range(n - 1):
             result = result * self
         return result
 
-    def feedback(self, H: TransferFunction | float = 1.0, sign: int = -1) -> TransferFunction:
-        """Closed-loop: G / (1 - sign*G*H)."""
+    def feedback(
+        self, H: TransferFunction | float = 1.0, sign: int = -1
+    ) -> TransferFunction:
+        """Closed-loop: G / (1 - sign*G*H). Loop delay accumulates."""
         if isinstance(H, (int, float)):
             H = TransferFunction([H], [1.0])
-        GH = self * H
+        loop_delay = self.input_delay + H.input_delay
         if sign == -1:
             return TransferFunction(
                 np.polymul(self.num, H.den),
                 np.polyadd(np.polymul(self.den, H.den), np.polymul(self.num, H.num)),
+                loop_delay,
             )
         else:
             return TransferFunction(
                 np.polymul(self.num, H.den),
                 np.polysub(np.polymul(self.den, H.den), np.polymul(self.num, H.num)),
+                loop_delay,
             )
 
     def __repr__(self) -> str:
-        return f"TransferFunction(num={self.num.tolist()}, den={self.den.tolist()})"
+        delay_str = f", delay={self.input_delay}" if self.input_delay != 0 else ""
+        return f"TransferFunction(num={self.num.tolist()}, den={self.den.tolist()}{delay_str})"
 
 
 class LaplaceDomain:
@@ -168,23 +186,28 @@ s = LaplaceDomain()
 
 
 def tf(
-    num: NDArray | Sequence | str, den: NDArray | Sequence | None = None
+    num: NDArray | Sequence | str,
+    den: NDArray | Sequence | None = None,
+    input_delay: float = 0.0,
 ) -> TransferFunction | LaplaceDomain:
     """
     Create transfer function.
 
     Usage:
         tf([1, 2], [1, 3, 2])  # (s+2)/(s^2+3s+2)
+        tf([5], [1, 1], input_delay=3.4)  # 5/(s+1) * e^(-3.4s)
         tf('s')                 # returns Laplace variable for algebraic use
     """
     if isinstance(num, str) and num.lower() == "s":
         return s
     if den is None:
         den = [1.0]
-    return TransferFunction(np.asarray(num), np.asarray(den))
+    return TransferFunction(np.asarray(num), np.asarray(den), input_delay)
 
 
-def pid(kp: float, ki: float = 0.0, kd: float = 0.0, tf_: float = 0.0) -> TransferFunction:
+def pid(
+    kp: float, ki: float = 0.0, kd: float = 0.0, tf_: float = 0.0
+) -> TransferFunction:
     """
     Create PID controller.
 

@@ -26,6 +26,9 @@ uv run python -c "from control_workflows.examples.continuous_time_models import 
 
 # Control system modeling (block diagram algebra)
 uv run python -c "from control_workflows.examples.control_system_modeling import run_matlab_example; run_matlab_example()"
+
+# Time delay support
+uv run python -c "from control_workflows.examples.time_delay import run_matlab_example; run_matlab_example()"
 ```
 
 ## SLICOT Usage Patterns
@@ -60,6 +63,7 @@ src/control_workflows/
 │   ├── transfer_function.py  # tf(), pid(), TransferFunction, LaplaceDomain
 │   ├── zpk.py                # zpk(), ZPK (zero-pole-gain)
 │   ├── state_space.py        # ss(), StateSpace
+│   ├── delay.py              # pade(), absorbDelay() - time delay support
 │   └── conversions.py        # tf2ss, ss2tf, zpk2tf, etc (uses tb04ad, td04ad)
 ├── examples/
 │   ├── kalman_filtering/
@@ -72,9 +76,10 @@ src/control_workflows/
 │   │   └── matlab_example.py # Feedforward vs integral vs LQR comparison
 │   ├── continuous_time_models/
 │   │   └── matlab_example.py # TF, ZPK, SS creation and conversion demo
-│   └── control_system_modeling/
-│       ├── interconnect.py   # series(), parallel(), feedback() using ab05xx
-│       └── matlab_example.py # Mixed model types, block diagram algebra
+│   ├── control_system_modeling/
+│   │   └── matlab_example.py # Mixed model types, block diagram algebra
+│   └── time_delay/
+│       └── matlab_example.py # Time delay: Pade, absorbDelay, freq response
 ```
 
 ## Skills

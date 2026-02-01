@@ -48,12 +48,15 @@ def freqresp(
     sys: LTISystem, omega: NDArray | None = None, n_points: int = 1000
 ) -> tuple[NDArray[np.float64], NDArray[np.complex128]]:
     """
-    Compute frequency response.
+    Compute frequency response including delay effects.
 
     Returns:
         (omega, response) where response shape is:
         - SISO: (len(omega),)
         - MIMO StateSpace: (p, m, len(omega))
+
+    For TransferFunction/ZPK, delay is included via e^(-jw*delay).
+    For StateSpace, delay is handled in sys.freqresp().
     """
     if omega is None:
         omega = _auto_omega(sys, n_points)
