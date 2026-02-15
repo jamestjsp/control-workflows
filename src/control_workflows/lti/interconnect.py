@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from slicot import ab05md, ab05nd, ab05pd
+from ctrlsys import ab05md, ab05nd, ab05pd
 
 if TYPE_CHECKING:
     from .state_space import StateSpace

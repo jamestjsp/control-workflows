@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Sequence
 import numpy as np
 from numpy.typing import NDArray
-from slicot import tb05ad, ab04md, tf01md
+from ctrlsys import tb05ad, ab04md, tf01md
 
 
 @dataclass

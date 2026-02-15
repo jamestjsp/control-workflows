@@ -2,7 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from slicot import fb01vd
+from ctrlsys import fb01vd
 
 
 def kalman_filter(

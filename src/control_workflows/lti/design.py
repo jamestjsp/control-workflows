@@ -3,7 +3,7 @@
 from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
-from slicot import sb01bd
+from ctrlsys import sb01bd
 
 
 def place(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import numpy as np
-from slicot import tb04ad, td04ad
+from ctrlsys import tb04ad, td04ad
 
 from .transfer_function import TransferFunction
 from .zpk import ZPK

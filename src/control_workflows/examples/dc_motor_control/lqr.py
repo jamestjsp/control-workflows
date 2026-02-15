@@ -2,7 +2,7 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from slicot import sb02od
+from ctrlsys import sb02od
 
 
 def lqr_gain(

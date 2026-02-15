@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import numpy as np
-from slicot import ab01nd, ab09ad
+from ctrlsys import ab01nd, ab09ad
 
 from .state_space import StateSpace
 

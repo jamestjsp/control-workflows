@@ -3,7 +3,7 @@
 from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
-from slicot import ab01nd, sb03md
+from ctrlsys import ab01nd, sb03md
 
 from .state_space import StateSpace
 

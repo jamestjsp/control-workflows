@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Control systems library using **slicot** (C11 rewrite, NOT slycot). Python 3.13+, managed with uv.
+Control systems library using **ctrlsys** (C11 rewrite, formerly `slicot`, NOT slycot). Python 3.13+, managed with uv.
 
 ## CRITICAL: Use Library Functions
 
@@ -69,11 +69,11 @@ uv run python -c "from control_workflows.examples.delay_to_z import run_matlab_e
 
 ## SLICOT Usage
 
-**This project uses `slicot` (C11), NOT `slycot` (Fortran).**
+**This project uses `ctrlsys` (C11), NOT `slycot` (Fortran).**
 
 ```bash
 # Verify routine signature
-uv run python -c "from slicot import <routine>; help(<routine>)"
+uv run python -c "from ctrlsys import <routine>; help(<routine>)"
 ```
 
 Arrays must be Fortran-ordered: `np.asfortranarray(A)`
@@ -89,4 +89,4 @@ Key routines:
 
 ## Skills
 
-Use `/slicot-control` for SLICOT routine lookup.
+Use `/ctrlsys-control` for SLICOT routine lookup.

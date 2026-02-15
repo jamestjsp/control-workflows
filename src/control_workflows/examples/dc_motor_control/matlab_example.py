@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.typing import NDArray
 import matplotlib.pyplot as plt
-from slicot import ab04md, tf01md, tb05ad
+from ctrlsys import ab04md, tf01md, tb05ad
 
 from .model import create_dc_motor_ss
 from .lqr import lqr_gain
