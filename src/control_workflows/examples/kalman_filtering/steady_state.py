@@ -1,4 +1,4 @@
-"""Steady-state Kalman filter using SLICOT sb02od."""
+"""Steady-state Kalman filter using ctrlsys sb02od."""
 
 import numpy as np
 from numpy.typing import NDArray

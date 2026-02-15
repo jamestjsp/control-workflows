@@ -1,4 +1,4 @@
-"""Time-varying Kalman filter using SLICOT fb01vd."""
+"""Time-varying Kalman filter using ctrlsys fb01vd."""
 
 import numpy as np
 from numpy.typing import NDArray
@@ -17,7 +17,7 @@ def kalman_filter(
     P0: NDArray[np.float64] | None = None,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], list[NDArray[np.float64]]]:
     """
-    Run Kalman filter using SLICOT fb01vd for each time step.
+    Run Kalman filter using ctrlsys fb01vd for each time step.
 
     Args:
         A: State transition (n x n)

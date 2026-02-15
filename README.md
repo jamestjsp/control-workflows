@@ -50,7 +50,7 @@ This displays parameters, return values, mathematical formulations, and usage ex
 
 ## Important: ctrlsys vs slycot
 
-This project uses **ctrlsys** (C11 implementation, formerly `slicot`), not slycot:
+This project uses **ctrlsys** (C11 implementation), not slycot:
 
 ```python
 from ctrlsys import sb02od  # correct

@@ -1,7 +1,7 @@
-"""Reproduce MATLAB 'Control System Modeling with Model Objects' example using SLICOT.
+"""Reproduce MATLAB 'Control System Modeling with Model Objects' example using ctrlsys.
 
 Demonstrates mixing different model types (zpk, pid, tf) and connecting them
-using SLICOT block diagram algebra routines (ab05md, ab05nd, ab05pd).
+using ctrlsys block diagram algebra routines (ab05md, ab05nd, ab05pd).
 
 Source: https://www.mathworks.com/help/control/ug/control-system-modeling-with-model-objects.html
 """
@@ -87,7 +87,7 @@ def run_matlab_example(verbose: bool = True) -> dict:
 
     # === Build Composite Systems ===
     if verbose:
-        print("\n3. BLOCK DIAGRAM ALGEBRA (SLICOT)")
+        print("\n3. BLOCK DIAGRAM ALGEBRA (ctrlsys)")
         print("-" * 30)
 
     # Forward path: G*C (controller before plant)

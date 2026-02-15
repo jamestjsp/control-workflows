@@ -1,4 +1,4 @@
-"""Block diagram interconnections using SLICOT."""
+"""Block diagram interconnections using ctrlsys."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _check_dt_compatible(g1: StateSpace, g2: StateSpace) -> None:
 
 def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
     """
-    Cascade (series) connection using SLICOT ab05md.
+    Cascade (series) connection using ctrlsys ab05md.
 
     Y = G2(G1(U)) - output of G1 feeds input of G2.
     Delays accumulate: output delay of G1 + input delay of G2.
@@ -67,7 +67,7 @@ def series(g1: StateSpace, g2: StateSpace) -> StateSpace:
 
 def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
     """
-    Parallel connection using SLICOT ab05pd.
+    Parallel connection using ctrlsys ab05pd.
 
     Y = G1*U + alpha*G2*U - both systems share same input.
     Requires matching delays or will raise.
@@ -104,7 +104,7 @@ def parallel(g1: StateSpace, g2: StateSpace, alpha: float = 1.0) -> StateSpace:
 
 def feedback(g1: StateSpace, g2: StateSpace, sign: float = -1.0) -> StateSpace:
     """
-    Feedback connection using SLICOT ab05nd.
+    Feedback connection using ctrlsys ab05nd.
 
     Closed-loop with G1 in forward path, G2 in feedback path.
     Returns T = G1 / (1 + G1*G2) for negative feedback (sign=-1).

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Control systems library using **ctrlsys** (C11 rewrite, formerly `slicot`, NOT slycot). Python 3.13+, managed with uv.
+Control systems library using **ctrlsys** (C11 rewrite, NOT slycot). Python 3.13+, managed with uv.
 
 ## CRITICAL: Use Library Functions
 
@@ -67,7 +67,7 @@ uv run python -c "from control_workflows.examples.time_delay import run_matlab_e
 uv run python -c "from control_workflows.examples.delay_to_z import run_matlab_example; run_matlab_example()"
 ```
 
-## SLICOT Usage
+## ctrlsys Usage
 
 **This project uses `ctrlsys` (C11), NOT `slycot` (Fortran).**
 
@@ -89,4 +89,4 @@ Key routines:
 
 ## Skills
 
-Use `/ctrlsys-control` for SLICOT routine lookup.
+Use `/ctrlsys-control` for routine lookup.

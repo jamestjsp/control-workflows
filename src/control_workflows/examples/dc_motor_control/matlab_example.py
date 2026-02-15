@@ -1,4 +1,4 @@
-"""Reproduce MATLAB DC motor control example using SLICOT."""
+"""Reproduce MATLAB DC motor control example using ctrlsys."""
 
 import numpy as np
 from numpy.typing import NDArray
@@ -10,7 +10,7 @@ from .lqr import lqr_gain
 
 
 def dc_gain(A: NDArray, B: NDArray, C: NDArray) -> NDArray:
-    """Compute DC gain using SLICOT tb05ad at freq=0."""
+    """Compute DC gain using ctrlsys tb05ad at freq=0."""
     A_f = np.asfortranarray(A)
     B_f = np.asfortranarray(B)
     C_f = np.asfortranarray(C)
@@ -21,7 +21,7 @@ def dc_gain(A: NDArray, B: NDArray, C: NDArray) -> NDArray:
 def discretize(
     A: NDArray, B: NDArray, C: NDArray, D: NDArray, dt: float
 ) -> tuple[NDArray, NDArray, NDArray, NDArray]:
-    """Discretize continuous system using SLICOT ab04md (bilinear/Tustin)."""
+    """Discretize continuous system using ctrlsys ab04md (bilinear/Tustin)."""
     A_f = np.asfortranarray(A)
     B_f = np.asfortranarray(B)
     C_f = np.asfortranarray(C)
@@ -33,7 +33,7 @@ def discretize(
 def simulate_discrete(
     Ad: NDArray, Bd: NDArray, Cd: NDArray, Dd: NDArray, u_seq: NDArray, x0: NDArray
 ) -> NDArray:
-    """Simulate discrete system using SLICOT tf01md."""
+    """Simulate discrete system using ctrlsys tf01md."""
     Ad_f = np.asfortranarray(Ad)
     Bd_f = np.asfortranarray(Bd)
     Cd_f = np.asfortranarray(Cd)

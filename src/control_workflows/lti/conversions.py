@@ -1,4 +1,4 @@
-"""Conversions between LTI representations using SLICOT."""
+"""Conversions between LTI representations using ctrlsys."""
 
 from __future__ import annotations
 import numpy as np
@@ -11,7 +11,7 @@ from .state_space import StateSpace
 
 def ss2tf(sys: StateSpace) -> TransferFunction:
     """
-    Convert state-space to transfer function using SLICOT tb04ad.
+    Convert state-space to transfer function using ctrlsys tb04ad.
 
     Only for SISO systems. Preserves total delay.
     """
@@ -40,7 +40,7 @@ def ss2tf(sys: StateSpace) -> TransferFunction:
 
 def tf2ss(tf: TransferFunction) -> StateSpace:
     """
-    Convert transfer function to state-space using SLICOT td04ad.
+    Convert transfer function to state-space using ctrlsys td04ad.
 
     Returns controllable canonical form. Preserves delay as input_delay.
     """

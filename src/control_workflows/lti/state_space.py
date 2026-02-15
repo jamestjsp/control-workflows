@@ -61,7 +61,7 @@ class StateSpace:
         return np.linalg.eigvals(self.A)
 
     def dc_gain(self) -> NDArray[np.float64]:
-        """Compute DC gain using SLICOT tb05ad at freq=0."""
+        """Compute DC gain using ctrlsys tb05ad at freq=0."""
         A_f = np.asfortranarray(self.A)
         B_f = np.asfortranarray(self.B)
         C_f = np.asfortranarray(self.C)
@@ -104,7 +104,7 @@ class StateSpace:
         thiran_order: int = 3,
     ) -> StateSpace:
         """
-        Convert to discrete-time using SLICOT ab04md.
+        Convert to discrete-time using ctrlsys ab04md.
 
         Args:
             dt: Sample time
@@ -155,7 +155,7 @@ class StateSpace:
     def simulate(
         self, u: NDArray[np.float64], x0: NDArray[np.float64] | None = None
     ) -> NDArray[np.float64]:
-        """Simulate discrete system using SLICOT tf01md."""
+        """Simulate discrete system using ctrlsys tf01md."""
         if x0 is None:
             x0 = np.zeros(self.n_states)
         A_f = np.asfortranarray(self.A)
@@ -178,7 +178,7 @@ class StateSpace:
         )
 
     def __add__(self, other: StateSpace) -> StateSpace:
-        """Parallel connection using SLICOT ab05pd."""
+        """Parallel connection using ctrlsys ab05pd."""
         if not isinstance(other, StateSpace):
             return NotImplemented
         from .interconnect import parallel
@@ -186,7 +186,7 @@ class StateSpace:
         return parallel(self, other)
 
     def __mul__(self, other: StateSpace) -> StateSpace:
-        """Series connection using SLICOT ab05md: y = G1 * G2 * u (G1 after G2)."""
+        """Series connection using ctrlsys ab05md: y = G1 * G2 * u (G1 after G2)."""
         if not isinstance(other, StateSpace):
             return NotImplemented
         from .interconnect import series
@@ -194,7 +194,7 @@ class StateSpace:
         return series(other, self)
 
     def feedback(self, K: StateSpace | NDArray, sign: int = -1) -> StateSpace:
-        """Closed-loop system with feedback gain/system K using SLICOT ab05nd."""
+        """Closed-loop system with feedback gain/system K using ctrlsys ab05nd."""
         from .interconnect import feedback as fb
 
         if isinstance(K, np.ndarray):

@@ -1,4 +1,4 @@
-"""Kalman filtering examples using SLICOT."""
+"""Kalman filtering examples using ctrlsys."""
 
 from .steady_state import steady_state_kalman_gain
 from .time_varying import kalman_filter

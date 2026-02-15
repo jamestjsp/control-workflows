@@ -1,4 +1,4 @@
-"""Reproduce MATLAB 'Creating Continuous-Time Models' example using SLICOT."""
+"""Reproduce MATLAB 'Creating Continuous-Time Models' example using ctrlsys."""
 
 import numpy as np
 

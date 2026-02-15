@@ -1,4 +1,4 @@
-"""LQR controller using SLICOT sb02od."""
+"""LQR controller using ctrlsys sb02od."""
 
 import numpy as np
 from numpy.typing import NDArray
